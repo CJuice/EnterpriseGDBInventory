@@ -1,6 +1,6 @@
 ###################################
 # Script:  InventoryGISDataInGDBs_V2.py
-# Author:  Conrad Schaefer
+# Author:  CJuice on GitHub
 # Date Created:  05/02/2017
 # Purpose:  Run through a folder containing a(n) .sde connection file inventory the feature classes.
 # Inputs:  User defined folder choice (integer)
