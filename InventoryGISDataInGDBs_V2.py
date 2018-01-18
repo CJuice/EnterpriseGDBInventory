@@ -15,117 +15,99 @@
 #                    This allowed a redesign so that the script could step into the Feature Datasets to get the Feature Classes, which aren't visible from the
 #                    root gdb. The script arcpy.env.workspace has to change to the Feature Dataset to access/see the Feature Classes within.
 ###################################
+# IMPORTS
 import os, sys
-import GenerateDateInfo
+# import GenerateDateInfo
 import FeatureClassObject_Class
 import GeodatabaseDomain_Class
+import logging
+from UtilityClass import UtilityClassFunctionality
+import arcpy
 
-doLogging = False
-if doLogging:
-    print("Logging Enabled\n")
-                 
-#These paths are for the various environment sets of SDE Connections. Not sure why universal path causes problems.
-##dictSDEConnectionPaths = {1 : u'\\\\tceq4apmgisdata\\giswrk\\IRGIS\\GIS Data\\2_TCEQ Data Inventory\\SDE_Connections_ForDataOwnersInventoryPurpose\\DEV_EnterpriseGDB',
-##                          2 : u'\\\\tceq4apmgisdata\\giswrk\\IRGIS\\GIS Data\\2_TCEQ Data Inventory\\SDE_Connections_ForDataOwnersInventoryPurpose\\TST_EnterpriseGDB',
-##                          3 : u'\\\\tceq4apmgisdata\\giswrk\\IRGIS\\GIS Data\\2_TCEQ Data Inventory\\SDE_Connections_ForDataOwnersInventoryPurpose\\USRTST_EnterpriseGDB',
-##                          4 : u'\\\\tceq4apmgisdata\\giswrk\\IRGIS\\GIS Data\\2_TCEQ Data Inventory\\SDE_Connections_ForDataOwnersInventoryPurpose\\PRD_EnterpriseGDB',
-##                          5 : u'\\\\tceq4apmgisdata\\giswrk\\IRGIS\\GIS Data\\2_TCEQ Data Inventory\\SDE_Connections_ForDataOwnersInventoryPurpose\\USRPRD_EnterpriseGDB',
-##                          6 : u'\\\\tceq4apmgisdata\\giswrk\\IRGIS\\GIS Data\\2_TCEQ Data Inventory\\TEST_SDE_Connections'}
-dictSDEConnectionPaths = {1 : r"M:\IRGIS\GIS Data\2_TCEQ Data Inventory\SDE_Connections_ForDataOwnersInventoryPurpose\DEV_EnterpriseGDB",
-                          2 : r"M:\IRGIS\GIS Data\2_TCEQ Data Inventory\SDE_Connections_ForDataOwnersInventoryPurpose\TST_EnterpriseGDB",
-                          3 : r"M:\IRGIS\GIS Data\2_TCEQ Data Inventory\SDE_Connections_ForDataOwnersInventoryPurpose\USRTST_EnterpriseGDB",
-                          4 : r"M:\IRGIS\GIS Data\2_TCEQ Data Inventory\SDE_Connections_ForDataOwnersInventoryPurpose\PRD_EnterpriseGDB",
-                          5 : r"M:\IRGIS\GIS Data\2_TCEQ Data Inventory\SDE_Connections_ForDataOwnersInventoryPurpose\USRPRD_EnterpriseGDB",
-                          6 : r"M:\IRGIS\GIS Data\2_TCEQ Data Inventory\TEST_SDE_Connections"}
-intDictLength = len(dictSDEConnectionPaths)
+# VARIABLES
+    # Logging setup
+strLogFileName = "LOG_TaxMapProcessing.log"
+logging.basicConfig(filename=strLogFileName,level=logging.INFO)
+UtilityClassFunctionality.printAndLog(" {} - InventoryGISDataInGDBs_V2.py Initiated".format(UtilityClassFunctionality.getDateTimeForLoggingAndPrinting()), UtilityClassFunctionality.INFO_LEVEL)
+    # Inputs:
+        # Get the users choice of environments to examine. Check validity.
+sdeFilesPath = None
+strUserSDEFilePathChoice = UtilityClassFunctionality.rawInputBasicChecks("\nPaste the precise path to the .sde connection file you wish to use\n>>")
+if UtilityClassFunctionality.checkPathExists(strUserSDEFilePathChoice):
+    sdeFilesPath = strUserSDEFilePathChoice
+else:
+    UtilityClassFunctionality.printAndLog("Path does not exist.\n{}".format(strUserSDEFilePathChoice), UtilityClassFunctionality.ERROR_LEVEL)
+    exit()
 
-# Get the users choice of environments to examine.
-boolInvalidAnswer = True
-while boolInvalidAnswer:
-    print("Here are the choices of sde connection files to examine.")
-    for key in dictSDEConnectionPaths.keys():
-        print(str(key) + ". " + os.path.basename(dictSDEConnectionPaths[key]))
-    version = sys.version
-    strUserChoice = None
-    if version.startswith("2.7."):
-        strUserChoice = raw_input("\nWhich set of sde connections do you want to examine? Enter the corresponding number (1-" + str(intDictLength) + "). \n(or type 'exit' to abort)\n")
-    elif version.startswith("3."):
-        strUserChoice = input("\nWhich set of sde connections do you want to examine? Enter the corresponding number (1-" + str(intDictLength) + "). \n(or type 'exit' to abort)\n")
-    else:
-        exit()
-    if strUserChoice == "exit":
-        print("goodbye")
-        boolInvalidAnswer = False
-        exit()
-    elif not strUserChoice.isalpha() and (int(strUserChoice) >= 1 and int(strUserChoice) <= intDictLength ):
-        boolInvalidAnswer = False
-    else:
-        print("Your answer was not in the range of 1 through " + str(intDictLength))
-        print("Try again...")
-        continue        
+        # Get the output directory location. Check validity.
+strOutputFileDirectory = None
+strUsersOutputFileDirectoryChoice = UtilityClassFunctionality.rawInputBasicChecks("\nPaste the path to the directory where new output files will be created.\n>>")
+if UtilityClassFunctionality.checkPathExists(strUsersOutputFileDirectoryChoice):
+    strOutputFileDirectory = strUsersOutputFileDirectoryChoice
+else:
+    UtilityClassFunctionality.printAndLog("Path does not exist.\n{}".format(strOutputFileDirectory), UtilityClassFunctionality.ERROR_LEVEL)
+    exit()
 
-# Set the path
-sdeFilesPath = dictSDEConnectionPaths[int(strUserChoice)]
-
-lsDateParts = GenerateDateInfo.getDateParts()
+lsDateParts = UtilityClassFunctionality.getDateParts() #GenerateDateInfo.getDateParts()
 strDateToday = lsDateParts[0] #Original date format
 strDateTodayDatabaseField = lsDateParts[2] + "/" + lsDateParts[3] + "/" + lsDateParts[1] #redesigned date format to meet Access database format for Date
 sdeFilesList = []
-strOutputFile = r"\\tceq4apmgisdata\giswrk\IRGIS\GIS Data\2_TCEQ Data Inventory" + "\\" + strDateToday + "_" + os.path.basename(sdeFilesPath) +  "__FeatureClassInventory.csv"
-strOutputFieldsFile = r"\\tceq4apmgisdata\giswrk\IRGIS\GIS Data\2_TCEQ Data Inventory" + "\\" + strDateToday + "_" + os.path.basename(sdeFilesPath) +  "__FeatureClassFIELDSInventory.csv"
-strOutputDomainsFile = r"\\tceq4apmgisdata\giswrk\IRGIS\GIS Data\2_TCEQ Data Inventory" + "\\" + strDateToday + "_" + os.path.basename(sdeFilesPath) +  "__GeodatabaseDomainsInventory.csv"
+
+strOutputFeatureClassFile = os.path.join(strOutputFileDirectory, "{}_{}__FeatureClassInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
+strOutputFieldsFile = os.path.join(strOutputFileDirectory, "{}_{}__FeatureClassFIELDSInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
+strOutputDomainsFile = os.path.join(strOutputFileDirectory, "{}_{}__GeodatabaseDomainsInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
+
 lsFCHeaders = ["FC_ID","ADM_ID","FC_FDNAME","FC_NAME","FC_DATATYPE","FC_SHAPETYPE","FC_SPATIALREFNAME","FC_DATEEXPORT", "FC_MEETSLOOSESTD", "FC_MEETSSTRICTSTD", "CP_ID"]
 lsFieldHeaders = ["FIELD_ID","FC_ID","FLD_ALIAS","FLD_NAME","FLD_TYPE","FLD_DEF_VAL","FLD_DOMAIN","FLD_ISNULLABLE","FLD_LENGTH","FLD_PRECISION","FLD_SCALE","FLD_REQUIRED"]
 lsDomainHeaders = ["DOMAIN_ID","ENV_ID","DOM_NAME","DOM_OWNER","DOM_DESC","DOM_DOMAINTYPE","DOM_TYPE","DOM_CODEDVALKEYS","DOM_CODEDVALVALUES","DOM_RANGE","DOM_DATEEXPORT"]
+
 lsFeatureDataSetADMs = []
 lsFeatureDataSetNames = []
 dictFDParts = {}
 intRoundCount = 0
 
-print("Importing arcpy...\n")
-import arcpy
+# METHODS
 
-try:
-    
-    # Set the workspace to the user chosen folder
-    arcpy.env.workspace = sdeFilesPath
-    
-    # Iterate through the sde files in the folder. By the most current design, there should only be one SDE@ connection file per environment. But the script can
-    #     handle more than one to accommodate investigations into particular ADM accounts/partitions.
-    for sdeFile in arcpy.ListFiles():
-        sdeFilesList.append(sdeFile)
-except:
-    print("Issue creating list of sde file names.\n")
-    print(arcpy.GetMessages())
-    exit()
+# FUNCTIONALITY
+arcpy.env.workspace = sdeFilesPath
+# try:
+#     # Set the workspace to the user chosen folder
+#     arcpy.env.workspace = sdeFilesPath
+#     for sdeFile in arcpy.ListFiles():
+#         sdeFilesList.append(sdeFile)
+# except Exception as e:
+#     UtilityClassFunctionality.printAndLog(e,UtilityClassFunctionality.ERROR_LEVEL)
+#     print(arcpy.GetMessages())
+#     exit()
 
 # Create the new output file for the feature class inventory with headers
 try:
-    fhand = open(strOutputFile,"w")
-    fhand.write(",".join(lsFCHeaders) + "\n")
-    fhand.close()
+    with open(strOutputFeatureClassFile, "w") as fhand:
+        fhand.write(",".join(lsFCHeaders) + "\n")
+        fhand.close()
 except:
-    print("Problem creating or checking existence of " +  strOutputFile + " file.\n")
+    UtilityClassFunctionality.printAndLog("Problem creating or checking existence of {} file.\n".format(strOutputFeatureClassFile), UtilityClassFunctionality.ERROR_LEVEL)
     exit()
 
 # Create the new output file for the feature class fields inventory with headers
 try:
-    fhandFieldsFile = open(strOutputFieldsFile,"w")
-    fhandFieldsFile.write(",".join(lsFieldHeaders) + "\n")
-    fhandFieldsFile.close()
+     with open(strOutputFieldsFile,"w") as fhandFieldsFile:
+         fhandFieldsFile.write(",".join(lsFieldHeaders) + "\n")
+         fhandFieldsFile.close()
 except:
-    print("Problem creating or checking existence of " +  strOutputFieldsFile + " file.\n")
+    UtilityClassFunctionality.printAndLog("Problem creating or checking existence of {} file.\n".format(strOutputFieldsFile), UtilityClassFunctionality.ERROR_LEVEL)
     exit()
 
 # Create the new output file for the Domains inventory with headers
 try:
-    fhandDomainsFile = open(strOutputDomainsFile,"w")
-    fhandDomainsFile.write(",".join(lsDomainHeaders) + "\n")
-    fhandDomainsFile.close()
+     with open(strOutputDomainsFile,"w") as fhandDomainsFile:
+         fhandDomainsFile.write(",".join(lsDomainHeaders) + "\n")
+         fhandDomainsFile.close()
 except:
-    print("Problem creating or checking existence of " +  strOutputDomainsFile + " file.\n")
+    UtilityClassFunctionality.printAndLog("Problem creating or checking existence of {} file.\n".format(strOutputDomainsFile),UtilityClassFunctionality.ERROR_LEVEL)
     exit()
-    
+
+# TODO: Continue here
 # Iterate through the sde files to inventory feature classes. Due to the glitch in SDE where all Feature Datasets are visible from any SDE connection file the script first looks
 #    at all uncontained/loose Feature Classes sitting in the root geodatabase. After inventorying all of those it then lists the Feature Datasets and proceeds to step into each dataset
 #    by altering the arcpy.env.workspace to the dataset so that the ListFeatureClasses() function returns with results. The feature classes within a feature dataset are not visible unless
@@ -144,7 +126,7 @@ for admSDEFile in sdeFilesTuple:
 
     # Open/Create the output files for results to be appended.
     try:
-        fhand = open(strOutputFile, "a")
+        fhand = open(strOutputFeatureClassFile, "a")
     except:
         print("Feature Class File did not open. Iteration: " + admSDEFile +"\n")
         exit()

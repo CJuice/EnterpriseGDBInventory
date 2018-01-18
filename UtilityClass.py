@@ -87,10 +87,9 @@ class UtilityClassFunctionality(object):
         """
         import os.path
         if os.path.exists(strPath):
-            return
+            return True
         else:
-            UtilityClassFunctionality.printAndLog("Path does not exist.", UtilityClassFunctionality.ERROR_LEVEL)
-            return exit()
+            return False
 
     @staticmethod
     def printAndLog(strMessage, strLogLevel):
@@ -129,18 +128,38 @@ class UtilityClassFunctionality(object):
                                                                      , tupTodayDateTime[5])
         return strTodayDateTimeForLogging
 
-    # USED DURING TESTING
     # @staticmethod
-    # def examineResultObject(resultObjectFromESRIProcess):
-    #     """
-    #     Examine the result object generated from an ESRI process.
-    #
-    #     Static method in UtilityClass
-    #     :param resultObjectFromESRIProcess: result object from geoprocessing process
-    #     :return: No return
-    #     """
-    #     lenResult = len(resultObjectFromESRIProcess)
-    #     print("len: {}".format(lenResult))
-    #     for i in range(0,lenResult):
-    #         strTemp = str(resultObjectFromESRIProcess[i])
-    #         print("\t{}".format(strTemp))
+    # def getDateToday():
+    #     import datetime
+    #     dateToday = datetime.date.today()
+    #     return dateToday
+
+    @staticmethod
+    def getDateParts():
+        import datetime
+        dateToday = datetime.date.today()
+        strDay = None
+        strMonth = None
+        strYear = None
+        strFullDate = None
+        intDay = dateToday.day
+        if intDay < 10:
+            strDay = "0" + str(intDay)
+        else:
+            strDay = str(intDay)
+        intMonth = dateToday.month
+        if intMonth < 10:
+            strMonth = "0" + str(intMonth)
+        else:
+            strMonth = str(intMonth)
+        intYear = dateToday.year
+        strYear = str(intYear)
+        strFullDate = strYear + strMonth + strDay
+        lsDateParts = [strFullDate, strYear, strMonth, strDay]
+        return lsDateParts
+
+    @captureAndPrintGeoprocessingErrors
+    def runESRIGPTool(func, *args, **kwargs):
+        """Pass ESRI geoprocessing function and arguements through Decorator containing error handling functionality"""
+
+        return func(*args, **kwargs)
