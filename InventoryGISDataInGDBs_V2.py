@@ -2,6 +2,7 @@
 # Script:  InventoryGISDataInGDBs_V2.py
 # Author:  CJuice on GitHub
 # Date Created:  05/02/2017
+# Compatibility: Revised on 20180118 for Python 3.6.2
 # Purpose:  Run through a folder containing a(n) .sde connection file inventory the feature classes.
 # Inputs:  User defined folder choice (integer)
 # Outputs:  Text csv file
@@ -14,14 +15,14 @@
 #                    This allowed a redesign so that the script could step into the Feature Datasets to get the Feature Classes, which aren't visible from the
 #                    root gdb. The script arcpy.env.workspace has to change to the Feature Dataset to access/see the Feature Classes within.
 ###################################
-import os
+import os, sys
 import GenerateDateInfo
 import FeatureClassObject_Class
 import GeodatabaseDomain_Class
 
 doLogging = False
 if doLogging:
-    print "Logging Enabled\n"
+    print("Logging Enabled\n")
                  
 #These paths are for the various environment sets of SDE Connections. Not sure why universal path causes problems.
 ##dictSDEConnectionPaths = {1 : u'\\\\tceq4apmgisdata\\giswrk\\IRGIS\\GIS Data\\2_TCEQ Data Inventory\\SDE_Connections_ForDataOwnersInventoryPurpose\\DEV_EnterpriseGDB',
@@ -41,19 +42,26 @@ intDictLength = len(dictSDEConnectionPaths)
 # Get the users choice of environments to examine.
 boolInvalidAnswer = True
 while boolInvalidAnswer:
-    print "Here are the choices of sde connection files to examine."
+    print("Here are the choices of sde connection files to examine.")
     for key in dictSDEConnectionPaths.keys():
-        print str(key) + ". " + os.path.basename(dictSDEConnectionPaths[key])
-    strUserChoice = raw_input("\nWhich set of sde connections do you want to examine? Enter the corresponding number (1-" + str(intDictLength) + "). \n(or type 'exit' to abort)\n")
+        print(str(key) + ". " + os.path.basename(dictSDEConnectionPaths[key]))
+    version = sys.version
+    strUserChoice = None
+    if version.startswith("2.7."):
+        strUserChoice = raw_input("\nWhich set of sde connections do you want to examine? Enter the corresponding number (1-" + str(intDictLength) + "). \n(or type 'exit' to abort)\n")
+    elif version.startswith("3."):
+        strUserChoice = input("\nWhich set of sde connections do you want to examine? Enter the corresponding number (1-" + str(intDictLength) + "). \n(or type 'exit' to abort)\n")
+    else:
+        exit()
     if strUserChoice == "exit":
-        print "goodbye"
+        print("goodbye")
         boolInvalidAnswer = False
         exit()
     elif not strUserChoice.isalpha() and (int(strUserChoice) >= 1 and int(strUserChoice) <= intDictLength ):
         boolInvalidAnswer = False
     else:
-        print "Your answer was not in the range of 1 through " + str(intDictLength)
-        print "Try again..."
+        print("Your answer was not in the range of 1 through " + str(intDictLength))
+        print("Try again...")
         continue        
 
 # Set the path
@@ -74,7 +82,7 @@ lsFeatureDataSetNames = []
 dictFDParts = {}
 intRoundCount = 0
 
-print "Importing arcpy...\n"
+print("Importing arcpy...\n")
 import arcpy
 
 try:
@@ -87,8 +95,8 @@ try:
     for sdeFile in arcpy.ListFiles():
         sdeFilesList.append(sdeFile)
 except:
-    print "Issue creating list of sde file names.\n"
-    print arcpy.GetMessages()
+    print("Issue creating list of sde file names.\n")
+    print(arcpy.GetMessages())
     exit()
 
 # Create the new output file for the feature class inventory with headers
@@ -97,7 +105,7 @@ try:
     fhand.write(",".join(lsFCHeaders) + "\n")
     fhand.close()
 except:
-    print "Problem creating or checking existence of " +  strOutputFile + " file.\n"
+    print("Problem creating or checking existence of " +  strOutputFile + " file.\n")
     exit()
 
 # Create the new output file for the feature class fields inventory with headers
@@ -106,7 +114,7 @@ try:
     fhandFieldsFile.write(",".join(lsFieldHeaders) + "\n")
     fhandFieldsFile.close()
 except:
-    print "Problem creating or checking existence of " +  strOutputFieldsFile + " file.\n"
+    print("Problem creating or checking existence of " +  strOutputFieldsFile + " file.\n")
     exit()
 
 # Create the new output file for the Domains inventory with headers
@@ -115,7 +123,7 @@ try:
     fhandDomainsFile.write(",".join(lsDomainHeaders) + "\n")
     fhandDomainsFile.close()
 except:
-    print "Problem creating or checking existence of " +  strOutputDomainsFile + " file.\n"
+    print("Problem creating or checking existence of " +  strOutputDomainsFile + " file.\n")
     exit()
     
 # Iterate through the sde files to inventory feature classes. Due to the glitch in SDE where all Feature Datasets are visible from any SDE connection file the script first looks
@@ -138,17 +146,17 @@ for admSDEFile in sdeFilesTuple:
     try:
         fhand = open(strOutputFile, "a")
     except:
-        print "Feature Class File did not open. Iteration: " + admSDEFile +"\n"
+        print("Feature Class File did not open. Iteration: " + admSDEFile +"\n")
         exit()
     try:
         fhandFieldsFile = open(strOutputFieldsFile, "a")
     except:
-        print "Fields File did not open. Iteration: " + admSDEFile +"\n"
+        print("Fields File did not open. Iteration: " + admSDEFile +"\n")
         exit()
     try:
         fhandDomainsFile = open(strOutputDomainsFile, "a")
     except:
-        print "Domains File did not open. Iteration: " + admSDEFile +"\n"
+        print("Domains File did not open. Iteration: " + admSDEFile +"\n")
         exit()
 
     # Change the workspace to the sde file gdb of interest. In the ideal design situation the workspace will be the single SDE connection file. But, the script can handle multiple SDE files for lower
@@ -156,15 +164,15 @@ for admSDEFile in sdeFilesTuple:
     try:
         arcpy.env.workspace = sdeFilesPath + "\\" + admSDEFile + "\\\\"
     except:
-        print "Problem establishing workspace for: " + admSDEFile +"\n"
+        print("Problem establishing workspace for: " + admSDEFile +"\n")
 
-    print "Accessing {0}...\n".format(admSDEFile)
+    print("Accessing {0}...\n".format(admSDEFile))
     
     # make a list of domains for the geodatabase workspace environment. If multiple sde files are examined for an environment, to prevent duplicates in file, the environment name is checked for previous use/examination.
     try:
         lsDomainObjects = arcpy.da.ListDomains()
     except:
-        print "arcpy.da.ListDomains() failed"
+        print("arcpy.da.ListDomains() failed")
     if strENVName not in lsTrackEnvironments:
         lsTrackEnvironments.append(strENVName)
         for domainObject in lsDomainObjects:
@@ -177,8 +185,8 @@ for admSDEFile in sdeFilesTuple:
     lsFeatureClasses = arcpy.ListFeatureClasses()
     try:
         if doLogging:
-            print "Looking for feature classes in... " + arcpy.env.workspace +"\n"
-            print lsFeatureClasses
+            print("Looking for feature classes in... " + arcpy.env.workspace +"\n")
+            print(lsFeatureClasses)
         
         for fc in lsFeatureClasses:
             
@@ -204,23 +212,23 @@ for admSDEFile in sdeFilesTuple:
                     # Build the feature class object
                     FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField, strContactPerson)
                 except:
-                    print "FeatureClassObject didn't instantiate"
+                    print("FeatureClassObject didn't instantiate")
                 try:
                     # Evaluate the Loose standards
                     FC.evaluateFC_LooseStandards()
                 except:
-                    print "Loose standards evaluation failed"
+                    print("Loose standards evaluation failed")
                 try:
                     # Evaluate the Loose standards
                     FC.evaluateFC_StrictStandards()
                 except:
-                    print "Strict standards evaluation failed"
+                    print("Strict standards evaluation failed")
                 try:
                     fhand.write(FC.writeFeatureClassProperties() + "\n")
                 except:
-                    print "Did not write FC properties to file"
+                    print("Did not write FC properties to file")
             except:
-                print "Error with " + fc +"\n"
+                print("Error with " + fc +"\n")
                
                 # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
                 fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +",ERROR,ERROR,"+ strContactPerson +"\n")
@@ -237,24 +245,24 @@ for admSDEFile in sdeFilesTuple:
 #                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(strFC_ID, field.aliasName, field.name, field.type, field.defaultValue, field.domain, field.isNullable, field.length, field.precision, field.required)
                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(lsFCFields, strField_ID, strFC_ID, field)
                     except:
-                        print "FeatureClassFieldDetailsObject didn't instantiate"
+                        print("FeatureClassFieldDetailsObject didn't instantiate")
                     try:
                         fhandFieldsFile.write(fcFieldDetails.writeFeatureClassFieldProperties() + "\n")
                     except:
-                        print "Did not write fcFieldDetails properties to file"
+                        print("Did not write fcFieldDetails properties to file")
             except:
-                print "Error with writing field details for " + strField_ID + "\n"
+                print("Error with writing field details for " + strField_ID + "\n")
                 
                 # For feature class field details that don't process correctly this write statement records their presence so that they don't go undocumented.
                 fhandFieldsFile.write(strField_ID + strFC_ID + "ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR\n")
     except:
-        print "Problem iterating through feature classes" +"\n"
+        print("Problem iterating through feature classes" +"\n")
         
     # make a list of feature datasets present.
     lsFeatureDataSets = arcpy.ListDatasets()
     strFDName = "" # resetting from above because it is used below.
     for fd in lsFeatureDataSets:
-        print "Examining feature dataset: " + fd
+        print("Examining feature dataset: " + fd)
         
         # For purposes of building the FC_ID and documenting the feature dataset name without the ADM name (ADM_Name.FD_Name) we need to isolate the feature dataset name
         lsFDParts = fd.split(".",1)
@@ -263,7 +271,7 @@ for admSDEFile in sdeFilesTuple:
         # Step into each feature dataset by altering the workspace
         arcpy.env.workspace = sdeFilesPath + "\\" + admSDEFile + "\\\\" + fd
         if doLogging:
-                print "Looking for feature classes in... ", arcpy.env.workspace +"\n"
+                print("Looking for feature classes in... ", arcpy.env.workspace +"\n")
         lsFeatureClasses = arcpy.ListFeatureClasses()
         try:
             for fc in lsFeatureClasses:
@@ -287,25 +295,25 @@ for admSDEFile in sdeFilesTuple:
                         # Build the feature class object
                         FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField, strContactPerson)
                     except:
-                        print "FeatureClassObject didn't instantiate"
+                        print("FeatureClassObject didn't instantiate")
                     try:
                         
                         # Evaluate the Loose standards
                         FC.evaluateFC_LooseStandards()
                     except:
-                        print "Loose standards evaluation failed"
+                        print("Loose standards evaluation failed")
                     try:
                         
                         # Evaluate the Loose standards
                         FC.evaluateFC_StrictStandards()
                     except:
-                        print "Strict standards evaluation failed"
+                        print("Strict standards evaluation failed")
                     try:
                         fhand.write(FC.writeFeatureClassProperties() + "\n")
                     except:
-                        print "Did not write FC properties to file"
+                        print("Did not write FC properties to file")
                 except:
-                    print "Error with " + fc +"\n"
+                    print("Error with " + fc +"\n")
                    
                     # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
                     fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +","+ strContactPerson +"\n")
@@ -322,20 +330,20 @@ for admSDEFile in sdeFilesTuple:
     #                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(strFC_ID, field.aliasName, field.name, field.type, field.defaultValue, field.domain, field.isNullable, field.length, field.precision, field.required)
                             fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(lsFCFields, strField_ID, strFC_ID, field)
                         except:
-                            print "FeatureClassFieldDetailsObject didn't instantiate"
+                            print("FeatureClassFieldDetailsObject didn't instantiate")
                         try:
                             fhandFieldsFile.write(fcFieldDetails.writeFeatureClassFieldProperties() + "\n")
                         except:
-                            print "Did not write fcFieldDetails properties to file"
+                            print("Did not write fcFieldDetails properties to file")
                 except:
-                    print "Error with writing field details for " + strField_ID + "\n"
+                    print("Error with writing field details for " + strField_ID + "\n")
                     
                     # For feature class field details that don't process correctly this write statement records their presence so that they don't go undocumented.
                     fhandFieldsFile.write(strField_ID + strFC_ID + "ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR\n")
         except:
-            print "Problem iterating through feature classes within feature dataset" +"\n"
+            print("Problem iterating through feature classes within feature dataset" +"\n")
         
     fhand.close()
     fhandFieldsFile.close()
     fhandDomainsFile.close()
-print "\nScript completed."
+print("\nScript completed.")

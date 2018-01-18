@@ -38,14 +38,14 @@ class FeatureClassObject(object):
                                    "HORZ_ACC":self.tupHORZ_ACCStandard,"HORZ_REF":self.tupHORZ_REFStandard, "HORZ_DATE":self.tupHORZ_DATEStandard,\
                                    "HORZ_ORG":self.tupHORZ_ORGStandard,"HORZ_DATUM":self.tupHORZ_DATUMStandard}
         if doLogging:
-            print "Strict Standards:\n"
+            print("Strict Standards:\n")
             for key in self.dictStrictRequiredFields.keys():
                 t = self.dictStrictRequiredFields.get(key)
-                print "Field: {0}, Exists: {1}, Type: {2}, Default: {3}, Domain: {4}, Nullable: {5}, Length: {6}, Precision: {7}, Scale: {8}, Required: {9}".format(t[1],t[0],t[2],t[3],t[4],t[5],t[6],t[7],t[8],t[9])
-            print "Loose Standards:\n"
+                print("Field: {0}, Exists: {1}, Type: {2}, Default: {3}, Domain: {4}, Nullable: {5}, Length: {6}, Precision: {7}, Scale: {8}, Required: {9}".format(t[1],t[0],t[2],t[3],t[4],t[5],t[6],t[7],t[8],t[9]))
+            print("Loose Standards:\n")
             for key in self.dictLooseRequiredFields.keys():
                 t = self.dictLooseRequiredFields.get(key)
-                print "Field: {0}, Exists: {1}, Type: {2}".format(t[1],t[0],t[2])
+                print("Field: {0}, Exists: {1}, Type: {2}".format(t[1],t[0],t[2]))
         
     def writeFeatureClassProperties(self):
         lsObjectFeatures = [self.fcID, self.ADM_ID, self.featureDataset, self.fcName, self.dataType, self.shapeType, self.spatialRefName, self.dateExport, self.boolMeetsLooseStandard, self.boolMeetsStrictStandard, self.contactPerson]
@@ -72,12 +72,12 @@ class FeatureClassObject(object):
                 # Check for the required field names, if exist then check to see if type is correct. Increment count, compare count to length of required fields list.
                 if (field.name in lsLooseStandardRequiredFieldNames) and (field.type == tupTemp[2] or field.type == "Double"): #FIXME: Though the standard is now "Single", current feature classes use "Double". Delete "Double" once on new standard.
                     count += 1
-#                     print self.fcName + ": " + field.name + " - " + str(count) + " of " + str(intNumberOfRequiredFieldsToCheckFor) + " fields meet standards."
+#                     print(self.fcName + ": " + field.name + " - " + str(count) + " of " + str(intNumberOfRequiredFieldsToCheckFor) + " fields meet standards."
                 else:
                     pass
-#                 print "\t\t\t", field.name, tupTemp, field.type
+#                 print("\t\t\t", field.name, tupTemp, field.type
         except:
-            print "Failed processing fields while checking loose standards"
+            print("Failed processing fields while checking loose standards")
                 
         if count == intNumberOfRequiredFieldsToCheckFor:
             self.boolMeetsLooseStandard = True
@@ -94,40 +94,40 @@ class FeatureClassObject(object):
         count = 0
         try:
             if doLogging:
-                print self.fcName
-                print "Spatial Reference is GCS_North_American_1983? " + str(self.spatialRefName == "GCS_North_American_1983")
+                print(self.fcName)
+                print("Spatial Reference is GCS_North_American_1983? " + str(self.spatialRefName == "GCS_North_American_1983"))
             for field in lsFCFieldObjects:
-#                 print "Location: ", 4, count
+#                 print("Location: ", 4, count
                 # get the tuple for the standard field of focus, if it exists.
                 tupTemp = self.dictStrictRequiredFields.get(field.name)
-#                 print "Location: ", 4.5
+#                 print("Location: ", 4.5
                 # Check for the required field names, if exist then check to see if type is correct. Increment count, compare count to length of required fields list.
                 ''' (EXISTS,NAME,TYPE,DEFVAL,DOMAIN,NULLABLE,LENGTH,PRECISION,SCALE,REQUIRED)'''
                 if doLogging:
-                    try:                    
-                        print 1,(field.name in lsStrictStandardRequiredFieldNames) 
-                        print 2,tupTemp[2],(field.type == tupTemp[2])
-                        print 3,(field.defaultValue == tupTemp[3])
-                        print 4,(field.domain == tupTemp[4])
-                        print 5,(field.isNullable == tupTemp[5])
-                        print 6,(field.length == tupTemp[6]) 
-                        print 7,(field.precision == tupTemp[7])
-                        print 8,(field.scale == tupTemp[8])
-                        print 9,(field.required == tupTemp[9])
+                    try:
+                        print(1,(field.name in lsStrictStandardRequiredFieldNames))
+                        print(2,tupTemp[2],(field.type == tupTemp[2]))
+                        print(3,(field.defaultValue == tupTemp[3]))
+                        print(4,(field.domain == tupTemp[4]))
+                        print(5,(field.isNullable == tupTemp[5]))
+                        print(6,(field.length == tupTemp[6]))
+                        print(7,(field.precision == tupTemp[7]))
+                        print(8,(field.scale == tupTemp[8]))
+                        print(9,(field.required == tupTemp[9]))
                     except:
-                        print "Problem with my print statements"
-                    print tupTemp
+                        print("Problem with my print(statements")
+                    print(tupTemp)
                 if (tupTemp != None) and (field.name in lsStrictStandardRequiredFieldNames) and (field.type == tupTemp[2]) and (field.defaultValue == tupTemp[3]) \
                  and (field.domain == tupTemp[4]) and (field.isNullable == tupTemp[5]) and (field.length == tupTemp[6]) and (field.precision == tupTemp[7]) \
                  and (field.scale == tupTemp[8]) and (field.required == tupTemp[9]) and (self.spatialRefName == "GCS_North_American_1983"):
-#                     print "Location: ", 5
+#                     print("Location: ", 5
                     count += 1
-#                     print self.fcName + ": " + field.name + " - " + str(count) + " of " + str(intNumberOfRequiredFieldsToCheckFor) + " fields meet standards."
+#                     print(self.fcName + ": " + field.name + " - " + str(count) + " of " + str(intNumberOfRequiredFieldsToCheckFor) + " fields meet standards."
                 else:
                     pass
-#                 print "\t\t\t", field.name, tupTemp, field.type
+#                 print("\t\t\t", field.name, tupTemp, field.type
         except:
-            print "Failed processing fields while checking strict standards"
+            print("Failed processing fields while checking strict standards")
                 
         if count == intNumberOfRequiredFieldsToCheckFor:
             self.boolMeetsStrictStandard = True
@@ -135,7 +135,7 @@ class FeatureClassObject(object):
 class FeatureClassFieldDetails(object):
     # Class to hold the details on the feature class object fields using the arpy.Describe fields info
     def __init__(self, lsFeatureClassFields, fieldID, fcID, field):
-#         print field.name, field.aliasName, field.type
+#         print(field.name, field.aliasName, field.type
         self.lsFeatureClassFields = lsFeatureClassFields
         self.fieldID = fieldID
         self.fcID = fcID
