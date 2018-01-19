@@ -72,7 +72,7 @@ class UtilityClassFunctionality(object):
                 UtilityClassFunctionality.printAndLog("UtilityClass.captureAndPrintGeoprocessingErrors: Geoprocessing Error.\n{}".format(GetMessages(2)), UtilityClassFunctionality.ERROR_LEVEL)
                 return exit()
             except Exception as e:
-                UtilityClassFunctionality.printAndLog("UtilityClass.captureAndPrintGeoprocessingErrors: {}".format(e),UtilityClassFunctionality.ERROR_LEVEL)
+                UtilityClassFunctionality.printAndLog("UtilityClass.captureAndPrintGeoprocessingErrors: {}".format(e), UtilityClassFunctionality.ERROR_LEVEL)
                 return exit()
             return resultValue
         return f
@@ -157,9 +157,3 @@ class UtilityClassFunctionality(object):
         strFullDate = strYear + strMonth + strDay
         lsDateParts = [strFullDate, strYear, strMonth, strDay]
         return lsDateParts
-
-    @captureAndPrintGeoprocessingErrors
-    def runESRIGPTool(func, *args, **kwargs):
-        """Pass ESRI geoprocessing function and arguements through Decorator containing error handling functionality"""
-
-        return func(*args, **kwargs)

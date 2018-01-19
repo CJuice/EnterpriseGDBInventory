@@ -67,9 +67,16 @@ dictFDParts = {}
 intRoundCount = 0
 
 # METHODS
+@UtilityClassFunctionality.captureAndPrintGeoprocessingErrors
+def runESRIGPTool(func, *args, **kwargs):
+    """Pass ESRI geoprocessing function and arguements through Decorator containing error handling functionality"""
+
+    return func(*args, **kwargs)
 
 # FUNCTIONALITY
 arcpy.env.workspace = sdeFilesPath
+
+
 # try:
 #     # Set the workspace to the user chosen folder
 #     arcpy.env.workspace = sdeFilesPath
@@ -108,89 +115,115 @@ except:
     exit()
 
 # TODO: Continue here
-# Iterate through the sde files to inventory feature classes. Due to the glitch in SDE where all Feature Datasets are visible from any SDE connection file the script first looks
-#    at all uncontained/loose Feature Classes sitting in the root geodatabase. After inventorying all of those it then lists the Feature Datasets and proceeds to step into each dataset
-#    by altering the arcpy.env.workspace to the dataset so that the ListFeatureClasses() function returns with results. The feature classes within a feature dataset are not visible unless
-#    the workspace is the dataset itself.
-sdeFilesTuple = tuple(sdeFilesList)
-lsTrackEnvironments = []
-for admSDEFile in sdeFilesTuple:
-    lsFeatureClasses = None
-    lsFeatureDataSets = None
-    lsDomainObjects = None
-    strSDENameAlteration = admSDEFile.replace("@",".")
-    lsSDENameParts = strSDENameAlteration.split(".")
-    
-    # Need the ENVIRONMENT name to create the unique ID's for the inventory database table records. This comes from the sde file name, not an environment property. So, if the filename is wrong, this is wrong.
-    strENVName = lsSDENameParts[1]
 
-    # Open/Create the output files for results to be appended.
-    try:
-        fhand = open(strOutputFeatureClassFile, "a")
-    except:
-        print("Feature Class File did not open. Iteration: " + admSDEFile +"\n")
-        exit()
-    try:
-        fhandFieldsFile = open(strOutputFieldsFile, "a")
-    except:
-        print("Fields File did not open. Iteration: " + admSDEFile +"\n")
-        exit()
-    try:
-        fhandDomainsFile = open(strOutputDomainsFile, "a")
-    except:
-        print("Domains File did not open. Iteration: " + admSDEFile +"\n")
-        exit()
+# Iterate through the sde files to inventory feature classes.
+#   Due to the glitch in SDE where all Feature Datasets are visible from any SDE connection file, the script first looks
+#   at all uncontained/loose Feature Classes sitting in the root geodatabase. After inventorying all of those it then lists the Feature Datasets and proceeds to step into each dataset
+#   by altering the arcpy.env.workspace to the dataset so that the ListFeatureClasses() function returns with results. The feature classes within a feature dataset are not visible unless
+#   the workspace is the dataset itself.
 
-    # Change the workspace to the sde file gdb of interest. In the ideal design situation the workspace will be the single SDE connection file. But, the script can handle multiple SDE files for lower
-    #    level ADMs
-    try:
-        arcpy.env.workspace = sdeFilesPath + "\\" + admSDEFile + "\\\\"
-    except:
-        print("Problem establishing workspace for: " + admSDEFile +"\n")
+# sdeFilesList.append(os.path.basename(sdeFilesPath)) #Original design could handle multiple sde files. Redesign focuses on one sde file.
+# UtilityClassFunctionality.printAndLog(sdeFilesPath, UtilityClassFunctionality.INFO_LEVEL) #TROUBLESHOOTING
 
-    print("Accessing {0}...\n".format(admSDEFile))
-    
-    # make a list of domains for the geodatabase workspace environment. If multiple sde files are examined for an environment, to prevent duplicates in file, the environment name is checked for previous use/examination.
-    try:
-        lsDomainObjects = arcpy.da.ListDomains()
-    except:
-        print("arcpy.da.ListDomains() failed")
-    if strENVName not in lsTrackEnvironments:
-        lsTrackEnvironments.append(strENVName)
-        for domainObject in lsDomainObjects:
-            gdbD = GeodatabaseDomain_Class.GeodatabaseDomains(strENVName, domainObject, strDateTodayDatabaseField)
-            fhandDomainsFile.write(gdbD.generateDatabaseEntryText() + "\n")
-    else:
-        pass
-    
-    # make a list of feature classes present, outside of Feature Datasets
-    lsFeatureClasses = arcpy.ListFeatureClasses()
-    try:
-        if doLogging:
-            print("Looking for feature classes in... " + arcpy.env.workspace +"\n")
-            print(lsFeatureClasses)
-        
+# sdeFilesTuple = tuple(sdeFilesList)
+sdeEnvironment_FileName = os.path.basename(sdeFilesPath)
+# lsTrackEnvironments = []
+lsFeatureClasses = None
+lsFeatureDataSets = None
+lsDomainObjects = None
+# strSDENameAlteration = admSDEFile.replace("@",".") # was environment specific manipulation
+lsSDENameParts = sdeEnvironment_FileName.split(".")
+
+
+# Need the ENVIRONMENT name to create the unique ID's for the inventory database table records. This comes from the sde file name, not an environment property. So, if the filename is wrong, this is wrong.
+# strENVName = lsSDENameParts[1] # environment name was list index 1 item in previous design
+strENVName = lsSDENameParts[0]
+
+# Open/Create the output files for results to be appended.
+try:
+    fhand = open(strOutputFeatureClassFile, "a")
+except:
+    print("Feature Class File did not open. Iteration: " + sdeEnvironment_FileName +"\n")
+    exit()
+try:
+    fhandFieldsFile = open(strOutputFieldsFile, "a")
+except:
+    print("Fields File did not open. Iteration: " + sdeEnvironment_FileName +"\n")
+    exit()
+try:
+    fhandDomainsFile = open(strOutputDomainsFile, "a")
+except:
+    print("Domains File did not open. Iteration: " + sdeEnvironment_FileName +"\n")
+    exit()
+try:
+    arcpy.env.workspace = sdeFilesPath
+except:
+    print("Problem establishing workspace: " + sdeFilesPath +"\n")
+
+UtilityClassFunctionality.printAndLog("Accessing {}\n".format(arcpy.env.workspace),UtilityClassFunctionality.INFO_LEVEL)
+
+# make a list of domains for the geodatabase workspace environment. If multiple sde files are examined for an environment, to prevent duplicates in file, the environment name is checked for previous use/examination.
+try:
+    lsDomainObjects = runESRIGPTool(arcpy.da.ListDomains,arcpy.env.workspace)
+except:
+    UtilityClassFunctionality.printAndLog("arcpy.da.ListDomains() failed", UtilityClassFunctionality.ERROR_LEVEL)
+    exit()
+
+# if len(lsDomainObjects) > 0 and strENVName not in lsTrackEnvironments:
+#     lsTrackEnvironments.append(strENVName)
+for domainObject in lsDomainObjects:
+    gdbD = GeodatabaseDomain_Class.GeodatabaseDomains(sdeEnvironment_FileName, domainObject, strDateTodayDatabaseField)
+    fhandDomainsFile.write(gdbD.generateDatabaseEntryText() + "\n")
+else:
+    pass
+
+# make a list of feature classes present, outside of Feature Datasets
+try:
+    lsFeatureClasses = runESRIGPTool(arcpy.ListFeatureClasses, arcpy.env.workspace)
+except:
+    UtilityClassFunctionality.printAndLog("Error creating list of feature classes outside of feature datasets", UtilityClassFunctionality.ERROR_LEVEL)
+    exit()
+
+#TODO: start here
+#TODO: How to deal with creating a unique FC id without the ADM accounts
+try:
+    if lsFeatureClasses != None and len(lsFeatureClasses) > 0:
+        UtilityClassFunctionality.printAndLog("Looking for feature classes in {}\n".format((arcpy.env.workspace), UtilityClassFunctionality.INFO_LEVEL))
         for fc in lsFeatureClasses:
-            
+
             # For purposes of building the FC_ID consistent with the portion of the script that iterates through feature datasets
-            strFDName = ""
-            
+            strFDName = "_"
+
+            # COMMENTED OUT DURING REFACTORING. strADMName existed at previous employer. Don't know
             # Instead of using Describe objects basename, which is ADMName.FeatureClassName, grab just the feature class name for use
-            lsFCParts = fc.split(".",1)
-            strADMName = lsFCParts[0]
-            strFCName = lsFCParts[1]
+            # lsFCParts = fc.split(".",1)
+            # strADMName = lsFCParts[0]
+            # strFCName = lsFCParts[1]
+            # strADM_ID = strENVName + "." + strADMName
+            # strFC_ID = strADM_ID + "." + strFDName + "." + strFCName
+            # strContactPerson = "1" # This is revised in the data inventory database environment. The default value of 1 equals "Unknown" contact person
+            strADMName = None
+            strFCName = None
+            if "." in fc:
+                lsFCParts = fc.split(".",1)
+                strADMName = lsFCParts[0]
+                strFCName = lsFCParts[1]
+            else:
+                strADMName = "_"
+                strFCName = fc
+
             strADM_ID = strENVName + "." + strADMName
             strFC_ID = strADM_ID + "." + strFDName + "." + strFCName
             strContactPerson = "1" # This is revised in the data inventory database environment. The default value of 1 equals "Unknown" contact person
-            
+
             try:
-                
-                # Get the arcpy.Desribe object for each feature class
+
+                # Get the arcpy.Describe object for each feature class
                 fcDesc = arcpy.Describe(fc)
                 lsBaseNameParts = fcDesc.baseName.split(".",1)
-             
+
                 try:
-                    
+
                     # Build the feature class object
                     FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField, strContactPerson)
                 except:
@@ -211,20 +244,20 @@ for admSDEFile in sdeFilesTuple:
                     print("Did not write FC properties to file")
             except:
                 print("Error with " + fc +"\n")
-               
+
                 # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
                 fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +",ERROR,ERROR,"+ strContactPerson +"\n")
-                               
+
             try:
-                
+
                 # Get the fields in each feature class
                 lsFCFields = fcDesc.fields
                 for field in lsFCFields:
                     strField_ID = strFC_ID + "." + field.name
                     try:
-                        
+
                         # Build the feature class field details object
-#                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(strFC_ID, field.aliasName, field.name, field.type, field.defaultValue, field.domain, field.isNullable, field.length, field.precision, field.required)
+    #                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(strFC_ID, field.aliasName, field.name, field.type, field.defaultValue, field.domain, field.isNullable, field.length, field.precision, field.required)
                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(lsFCFields, strField_ID, strFC_ID, field)
                     except:
                         print("FeatureClassFieldDetailsObject didn't instantiate")
@@ -234,30 +267,32 @@ for admSDEFile in sdeFilesTuple:
                         print("Did not write fcFieldDetails properties to file")
             except:
                 print("Error with writing field details for " + strField_ID + "\n")
-                
+
                 # For feature class field details that don't process correctly this write statement records their presence so that they don't go undocumented.
                 fhandFieldsFile.write(strField_ID + strFC_ID + "ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR\n")
-    except:
-        print("Problem iterating through feature classes" +"\n")
-        
-    # make a list of feature datasets present.
-    lsFeatureDataSets = arcpy.ListDatasets()
-    strFDName = "" # resetting from above because it is used below.
+    else:
+        pass
+except:
+    print("Problem iterating through feature classes" +"\n")
+
+# make a list of feature datasets present.
+lsFeatureDataSets = arcpy.ListDatasets()
+strFDName = "" # resetting from above because it is used below.
+if len(lsFeatureDataSets) > 0:
     for fd in lsFeatureDataSets:
         print("Examining feature dataset: " + fd)
-        
+
         # For purposes of building the FC_ID and documenting the feature dataset name without the ADM name (ADM_Name.FD_Name) we need to isolate the feature dataset name
         lsFDParts = fd.split(".",1)
         strFDName = lsFDParts[1]
-        
+
         # Step into each feature dataset by altering the workspace
-        arcpy.env.workspace = sdeFilesPath + "\\" + admSDEFile + "\\\\" + fd
-        if doLogging:
-                print("Looking for feature classes in... ", arcpy.env.workspace +"\n")
+        arcpy.env.workspace = os.path.join(sdeFilesPath,fd)
+        UtilityClassFunctionality.printAndLog("Looking for feature classes in {}\n".format(arcpy.env.workspace), UtilityClassFunctionality.INFO_LEVEL)
         lsFeatureClasses = arcpy.ListFeatureClasses()
         try:
             for fc in lsFeatureClasses:
-                    
+
                 # Instead of using Describe objects basename, which is ADMName.FeatureClassName, grab just the feature class name for use
                 lsFCParts = fc.split(".",1)
                 strADMName = lsFCParts[0]
@@ -265,27 +300,27 @@ for admSDEFile in sdeFilesTuple:
                 strADM_ID = strENVName + "." + strADMName
                 strFC_ID = strADM_ID + "." + strFDName + "." + strFCName
                 strContactPerson = "1" # This is revised in the data inventory database environment. The default value of 1 is "Unknown" contact person
-                
+
                 try:
-                
+
                     # Get the arcpy.Desribe object for each feature class
                     fcDesc = arcpy.Describe(fc)
                     lsBaseNameParts = fcDesc.baseName.split(".",1)
-                 
+
                     try:
-                        
+
                         # Build the feature class object
                         FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField, strContactPerson)
                     except:
                         print("FeatureClassObject didn't instantiate")
                     try:
-                        
+
                         # Evaluate the Loose standards
                         FC.evaluateFC_LooseStandards()
                     except:
                         print("Loose standards evaluation failed")
                     try:
-                        
+
                         # Evaluate the Loose standards
                         FC.evaluateFC_StrictStandards()
                     except:
@@ -296,18 +331,18 @@ for admSDEFile in sdeFilesTuple:
                         print("Did not write FC properties to file")
                 except:
                     print("Error with " + fc +"\n")
-                   
+
                     # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
                     fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +","+ strContactPerson +"\n")
-                                   
+
                 try:
-                    
+
                     # Get the fields in each feature class
                     lsFCFields = fcDesc.fields
                     for field in lsFCFields:
                         strField_ID = strFC_ID + "." + field.name
                         try:
-                            
+
                             # Build the feature class field details object
     #                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(strFC_ID, field.aliasName, field.name, field.type, field.defaultValue, field.domain, field.isNullable, field.length, field.precision, field.required)
                             fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(lsFCFields, strField_ID, strFC_ID, field)
@@ -319,13 +354,14 @@ for admSDEFile in sdeFilesTuple:
                             print("Did not write fcFieldDetails properties to file")
                 except:
                     print("Error with writing field details for " + strField_ID + "\n")
-                    
+
                     # For feature class field details that don't process correctly this write statement records their presence so that they don't go undocumented.
                     fhandFieldsFile.write(strField_ID + strFC_ID + "ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR\n")
         except:
             print("Problem iterating through feature classes within feature dataset" +"\n")
-        
-    fhand.close()
-    fhandFieldsFile.close()
-    fhandDomainsFile.close()
+else:
+    pass
+fhand.close()
+fhandFieldsFile.close()
+fhandDomainsFile.close()
 print("\nScript completed.")
