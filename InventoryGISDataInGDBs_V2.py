@@ -57,7 +57,8 @@ strOutputFeatureClassFile = os.path.join(strOutputFileDirectory, "{}_{}__Feature
 strOutputFieldsFile = os.path.join(strOutputFileDirectory, "{}_{}__FeatureClassFIELDSInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
 strOutputDomainsFile = os.path.join(strOutputFileDirectory, "{}_{}__GeodatabaseDomainsInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
 
-lsFCHeaders = ["FC_ID","ADM_ID","FC_FDNAME","FC_NAME","FC_DATATYPE","FC_SHAPETYPE","FC_SPATIALREFNAME","FC_DATEEXPORT", "FC_MEETSLOOSESTD", "FC_MEETSSTRICTSTD", "CP_ID"]
+lsFCHeaders = ["FC_ID","ADM_ID","FC_FDNAME","FC_NAME","FC_DATATYPE","FC_SHAPETYPE","FC_SPATIALREFNAME","FC_DATEEXPORT"]
+# lsFCHeaders = ["FC_ID","ADM_ID","FC_FDNAME","FC_NAME","FC_DATATYPE","FC_SHAPETYPE","FC_SPATIALREFNAME","FC_DATEEXPORT", "FC_MEETSLOOSESTD", "FC_MEETSSTRICTSTD", "CP_ID"]
 lsFieldHeaders = ["FIELD_ID","FC_ID","FLD_ALIAS","FLD_NAME","FLD_TYPE","FLD_DEF_VAL","FLD_DOMAIN","FLD_ISNULLABLE","FLD_LENGTH","FLD_PRECISION","FLD_SCALE","FLD_REQUIRED"]
 lsDomainHeaders = ["DOMAIN_ID","ENV_ID","DOM_NAME","DOM_OWNER","DOM_DESC","DOM_DOMAINTYPE","DOM_TYPE","DOM_CODEDVALKEYS","DOM_CODEDVALVALUES","DOM_RANGE","DOM_DATEEXPORT"]
 
@@ -69,7 +70,7 @@ intRoundCount = 0
 # METHODS
 @UtilityClassFunctionality.captureAndPrintGeoprocessingErrors
 def runESRIGPTool(func, *args, **kwargs):
-    """Pass ESRI geoprocessing function and arguements through Decorator containing error handling functionality"""
+    """Pass ESRI geoprocessing function and arguments through Decorator containing error handling functionality"""
 
     return func(*args, **kwargs)
 
@@ -114,8 +115,6 @@ except:
     UtilityClassFunctionality.printAndLog("Problem creating or checking existence of {} file.\n".format(strOutputDomainsFile),UtilityClassFunctionality.ERROR_LEVEL)
     exit()
 
-# TODO: Continue here
-
 # Iterate through the sde files to inventory feature classes.
 #   Due to the glitch in SDE where all Feature Datasets are visible from any SDE connection file, the script first looks
 #   at all uncontained/loose Feature Classes sitting in the root geodatabase. After inventorying all of those it then lists the Feature Datasets and proceeds to step into each dataset
@@ -127,7 +126,7 @@ except:
 
 # sdeFilesTuple = tuple(sdeFilesList)
 sdeEnvironment_FileName = os.path.basename(sdeFilesPath)
-# lsTrackEnvironments = []
+# lsTrackEnvironments = [] # Now assuming a single environment at a time; in other words only one sde file at a time.
 lsFeatureClasses = None
 lsFeatureDataSets = None
 lsDomainObjects = None
@@ -143,22 +142,22 @@ strENVName = lsSDENameParts[0]
 try:
     fhand = open(strOutputFeatureClassFile, "a")
 except:
-    print("Feature Class File did not open. Iteration: " + sdeEnvironment_FileName +"\n")
+    print("Feature Class File did not open. Iteration: {}\n".format(sdeEnvironment_FileName))
     exit()
 try:
     fhandFieldsFile = open(strOutputFieldsFile, "a")
 except:
-    print("Fields File did not open. Iteration: " + sdeEnvironment_FileName +"\n")
+    print("Fields File did not open. Iteration: {}\n".format(sdeEnvironment_FileName))
     exit()
 try:
     fhandDomainsFile = open(strOutputDomainsFile, "a")
 except:
-    print("Domains File did not open. Iteration: " + sdeEnvironment_FileName +"\n")
+    print("Domains File did not open. Iteration: {}\n".format(sdeEnvironment_FileName))
     exit()
 try:
     arcpy.env.workspace = sdeFilesPath
 except:
-    print("Problem establishing workspace: " + sdeFilesPath +"\n")
+    print("Problem establishing workspace: {}\n".format(sdeFilesPath))
 
 UtilityClassFunctionality.printAndLog("Accessing {}\n".format(arcpy.env.workspace),UtilityClassFunctionality.INFO_LEVEL)
 
@@ -185,7 +184,6 @@ except:
     exit()
 
 #TODO: start here
-#TODO: How to deal with creating a unique FC id without the ADM accounts
 try:
     if lsFeatureClasses != None and len(lsFeatureClasses) > 0:
         UtilityClassFunctionality.printAndLog("Looking for feature classes in {}\n".format((arcpy.env.workspace), UtilityClassFunctionality.INFO_LEVEL))
@@ -212,9 +210,9 @@ try:
                 strADMName = "_"
                 strFCName = fc
 
-            strADM_ID = strENVName + "." + strADMName
-            strFC_ID = strADM_ID + "." + strFDName + "." + strFCName
-            strContactPerson = "1" # This is revised in the data inventory database environment. The default value of 1 equals "Unknown" contact person
+            strADM_ID = "{}.{}".format(strENVName,strADMName)
+            strFC_ID = "{}.{}.{}".format(strADM_ID,strFDName,strFCName)
+            # strContactPerson = "1" # This is revised in the data inventory database environment. The default value of 1 equals "Unknown" contact person
 
             try:
 
@@ -225,28 +223,30 @@ try:
                 try:
 
                     # Build the feature class object
-                    FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField, strContactPerson)
+                    FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField)
+                    # FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField, strContactPerson)
                 except:
                     print("FeatureClassObject didn't instantiate")
+                # try:
+                #     # Evaluate the Loose standards
+                #     FC.evaluateFC_LooseStandards()
+                # except:
+                #     print("Loose standards evaluation failed")
+                # try:
+                #     # Evaluate the Loose standards
+                #     FC.evaluateFC_StrictStandards()
+                # except:
+                #     print("Strict standards evaluation failed")
                 try:
-                    # Evaluate the Loose standards
-                    FC.evaluateFC_LooseStandards()
-                except:
-                    print("Loose standards evaluation failed")
-                try:
-                    # Evaluate the Loose standards
-                    FC.evaluateFC_StrictStandards()
-                except:
-                    print("Strict standards evaluation failed")
-                try:
-                    fhand.write(FC.writeFeatureClassProperties() + "\n")
+                    fhand.write("{}\n".format(FC.writeFeatureClassProperties()))
                 except:
                     print("Did not write FC properties to file")
             except:
-                print("Error with " + fc +"\n")
+                print("Error with {}\n".format(fc))
 
                 # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
-                fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +",ERROR,ERROR,"+ strContactPerson +"\n")
+                fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{},ERROR,ERROR\n".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField))
+                # fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +",ERROR,ERROR,"+ strContactPerson +"\n")
 
             try:
 
@@ -280,7 +280,7 @@ lsFeatureDataSets = arcpy.ListDatasets()
 strFDName = "" # resetting from above because it is used below.
 if len(lsFeatureDataSets) > 0:
     for fd in lsFeatureDataSets:
-        print("Examining feature dataset: " + fd)
+        print("Examining feature dataset: {}".format(fd))
 
         # For purposes of building the FC_ID and documenting the feature dataset name without the ADM name (ADM_Name.FD_Name) we need to isolate the feature dataset name
         lsFDParts = fd.split(".",1)
@@ -299,7 +299,7 @@ if len(lsFeatureDataSets) > 0:
                 strFCName = lsFCParts[1]
                 strADM_ID = strENVName + "." + strADMName
                 strFC_ID = strADM_ID + "." + strFDName + "." + strFCName
-                strContactPerson = "1" # This is revised in the data inventory database environment. The default value of 1 is "Unknown" contact person
+                # strContactPerson = "1" # This is revised in the data inventory database environment. The default value of 1 is "Unknown" contact person
 
                 try:
 
@@ -310,30 +310,32 @@ if len(lsFeatureDataSets) > 0:
                     try:
 
                         # Build the feature class object
-                        FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField, strContactPerson)
+                        FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField)
                     except:
                         print("FeatureClassObject didn't instantiate")
+                    # try:
+                    #
+                    #     # Evaluate the Loose standards
+                    #     FC.evaluateFC_LooseStandards()
+                    # except:
+                    #     print("Loose standards evaluation failed")
+                    # try:
+                    #
+                    #     # Evaluate the Loose standards
+                    #     FC.evaluateFC_StrictStandards()
+                    # except:
+                    #     print("Strict standards evaluation failed")
                     try:
-
-                        # Evaluate the Loose standards
-                        FC.evaluateFC_LooseStandards()
-                    except:
-                        print("Loose standards evaluation failed")
-                    try:
-
-                        # Evaluate the Loose standards
-                        FC.evaluateFC_StrictStandards()
-                    except:
-                        print("Strict standards evaluation failed")
-                    try:
-                        fhand.write(FC.writeFeatureClassProperties() + "\n")
+                        fhand.write("{}\n".format(FC.writeFeatureClassProperties()))
                     except:
                         print("Did not write FC properties to file")
                 except:
-                    print("Error with " + fc +"\n")
+                    print("Error with {}\n".format(fc))
 
                     # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
-                    fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +","+ strContactPerson +"\n")
+                    fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{}\n".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField))
+                    # fhand.write(strFC_ID +","+ strADM_ID +","+ strFDName +","+ strFCName +",ERROR,ERROR,ERROR," + strDateTodayDatabaseField +","+ strContactPerson +"\n")
+
 
                 try:
 
@@ -361,6 +363,7 @@ if len(lsFeatureDataSets) > 0:
             print("Problem iterating through feature classes within feature dataset" +"\n")
 else:
     pass
+
 fhand.close()
 fhandFieldsFile.close()
 fhandDomainsFile.close()
