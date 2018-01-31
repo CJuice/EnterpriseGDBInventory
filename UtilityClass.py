@@ -63,9 +63,9 @@ class UtilityClassFunctionality(object):
         :param func: The ESRI geoprocessing function object
         :return: The resulting value from the tool on successful run, or exit on fail.
         """
-
         from arcpy import ExecuteError, GetMessages
         def f(*args, **kwargs):
+
             try:
                 resultValue = func(*args, **kwargs)
             except ExecuteError:

@@ -26,7 +26,7 @@ import arcpy
 
 # VARIABLES
     # Logging setup
-strLogFileName = "LOG_TaxMapProcessing.log"
+strLogFileName = "EnterpriseGDBInventory_LOG.log"
 logging.basicConfig(filename=strLogFileName,level=logging.INFO)
 UtilityClassFunctionality.printAndLog(" {} - InventoryGISDataInGDBs_V2.py Initiated".format(UtilityClassFunctionality.getDateTimeForLoggingAndPrinting()), UtilityClassFunctionality.INFO_LEVEL)
     # Inputs:
@@ -160,7 +160,7 @@ except:
     print("Problem establishing workspace: {}\n".format(sdeFilesPath))
 
 UtilityClassFunctionality.printAndLog("Accessing {}\n".format(arcpy.env.workspace),UtilityClassFunctionality.INFO_LEVEL)
-
+print(arcpy.env.workspace)
 # make a list of domains for the geodatabase workspace environment. If multiple sde files are examined for an environment, to prevent duplicates in file, the environment name is checked for previous use/examination.
 try:
     lsDomainObjects = runESRIGPTool(arcpy.da.ListDomains,arcpy.env.workspace)
@@ -178,15 +178,14 @@ else:
 
 # make a list of feature classes present, outside of Feature Datasets
 try:
-    lsFeatureClasses = runESRIGPTool(arcpy.ListFeatureClasses, arcpy.env.workspace)
+    lsFeatureClasses = runESRIGPTool(arcpy.ListFeatureClasses)
 except:
     UtilityClassFunctionality.printAndLog("Error creating list of feature classes outside of feature datasets", UtilityClassFunctionality.ERROR_LEVEL)
     exit()
 
-#TODO: start here
 try:
     if lsFeatureClasses != None and len(lsFeatureClasses) > 0:
-        UtilityClassFunctionality.printAndLog("Looking for feature classes in {}\n".format((arcpy.env.workspace), UtilityClassFunctionality.INFO_LEVEL))
+        UtilityClassFunctionality.printAndLog("Looking for feature classes in {}\n".format(arcpy.env.workspace), UtilityClassFunctionality.INFO_LEVEL)
         for fc in lsFeatureClasses:
 
             # For purposes of building the FC_ID consistent with the portion of the script that iterates through feature datasets
@@ -274,6 +273,7 @@ try:
         pass
 except:
     print("Problem iterating through feature classes" +"\n")
+
 
 # make a list of feature datasets present.
 lsFeatureDataSets = arcpy.ListDatasets()
