@@ -2,6 +2,7 @@
 # Script:  InventoryGISDataInSDEGDB.py
 # Author:  CJuice on GitHub
 # Date Created:  05/02/2017
+# Revised: 01/2018
 # Compatibility: Revised on 20180118 for Python 3.6.2
 # Purpose:  Run through a folder containing a(n) .sde connection file inventory the feature classes.
 # Inputs:  User defined folder choice (integer)
@@ -122,22 +123,23 @@ strENVName = lsSDENameParts[0]
 try:
     fhand = open(strOutputFeatureClassFile, "a")
 except:
-    print("Feature Class File did not open. Iteration: {}\n".format(sdeEnvironment_FileName))
+    UtilityClassFunctionality.printAndLog("Feature Class File did not open. Iteration: {}\n".format(sdeEnvironment_FileName), UtilityClassFunctionality.ERROR_LEVEL)
     exit()
 try:
     fhandFieldsFile = open(strOutputFieldsFile, "a")
 except:
-    print("Fields File did not open. Iteration: {}\n".format(sdeEnvironment_FileName))
+    UtilityClassFunctionality.printAndLog("Fields File did not open. Iteration: {}\n".format(sdeEnvironment_FileName), UtilityClassFunctionality.ERROR_LEVEL)
     exit()
 try:
     fhandDomainsFile = open(strOutputDomainsFile, "a")
 except:
-    print("Domains File did not open. Iteration: {}\n".format(sdeEnvironment_FileName))
+    UtilityClassFunctionality.printAndLog("Domains File did not open. Iteration: {}\n".format(sdeEnvironment_FileName), UtilityClassFunctionality.ERROR_LEVEL)
     exit()
 try:
     arcpy.env.workspace = sdeFilesPath
 except:
-    print("Problem establishing workspace: {}\n".format(sdeFilesPath))
+    UtilityClassFunctionality.printAndLog("Problem establishing workspace: {}\n".format(sdeFilesPath), UtilityClassFunctionality.ERROR_LEVEL)
+    exit()
 UtilityClassFunctionality.printAndLog("Accessing {}\n".format(arcpy.env.workspace),UtilityClassFunctionality.INFO_LEVEL)
 
 # make a list of domains for the geodatabase workspace environment. If multiple sde files are examined for an environment, to prevent duplicates in file, the environment name is checked for previous use/examination.
@@ -191,17 +193,16 @@ try:
                     # Build the feature class object
                     FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField)
                 except:
-                    print("FeatureClassObject didn't instantiate")
+                    UtilityClassFunctionality.printAndLog("FeatureClassObject didn't instantiate: {}".format(fc), UtilityClassFunctionality.WARNING_LEVEL)
 
                 try:
                     fhand.write("{}\n".format(FC.writeFeatureClassProperties()))
                 except:
-                    print("Did not write FC properties to file")
+                    UtilityClassFunctionality.printAndLog("Did not write FC properties to file: {}".format(fc), UtilityClassFunctionality.WARNING_LEVEL)
             except:
-                print("Error with {}\n".format(fc))
-
                 # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
                 fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{},ERROR,ERROR\n".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField))
+                UtilityClassFunctionality.printAndLog("{},{},{},{},ERROR,ERROR,ERROR,{},ERROR,ERROR".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField), UtilityClassFunctionality.ERROR_LEVEL)
 
             try:
 
@@ -214,28 +215,32 @@ try:
                         # Build the feature class field details object
                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(lsFCFields, strField_ID, strFC_ID, field)
                     except:
-                        print("FeatureClassFieldDetailsObject didn't instantiate")
+                        UtilityClassFunctionality.printAndLog("FeatureClassFieldDetailsObject didn't instantiate: {}".format(field),UtilityClassFunctionality.WARNING_LEVEL)
                     try:
                         fhandFieldsFile.write("{}\n".format(fcFieldDetails.writeFeatureClassFieldProperties()))
                     except:
-                        print("Did not write fcFieldDetails properties to file")
+                        UtilityClassFunctionality.printAndLog("Did not write fcFieldDetails properties to file: {}".format(fcFieldDetails),UtilityClassFunctionality.WARNING_LEVEL)
             except:
-                print("Error with writing field details for {}\n".format(strField_ID))
-
                 # For feature class field details that don't process correctly this write statement records their presence so that they don't go undocumented.
                 fhandFieldsFile.write("{},{},ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR\n".format(strField_ID,strFC_ID))
+                UtilityClassFunctionality.printAndLog("Error with writing field details for {}\n".format(strField_ID), UtilityClassFunctionality.ERROR_LEVEL)
     else:
         pass
 except:
-    print("Problem iterating through feature classes\n")
-
+    UtilityClassFunctionality.printAndLog("Problem iterating through feature classes", UtilityClassFunctionality.ERROR_LEVEL)
+    exit()
 
 # make a list of feature datasets present.
-lsFeatureDataSets = runESRIGPTool(arcpy.ListDatasets)
+try:
+    lsFeatureDataSets = runESRIGPTool(arcpy.ListDatasets)
+except:
+    UtilityClassFunctionality.printAndLog("arcpy.ListDatasets did not run properly", UtilityClassFunctionality.ERROR_LEVEL)
+    exit()
+
 strFDName = "" # resetting from above because it is used below.
 if len(lsFeatureDataSets) > 0:
     for fd in lsFeatureDataSets:
-        print("Examining feature dataset: {}".format(fd))
+        UtilityClassFunctionality.printAndLog("Examining feature dataset: {}".format(fd), UtilityClassFunctionality.INFO_LEVEL)
 
         # For purposes of building the FC_ID and documenting the feature dataset name without the ADM name (ADM_Name.FD_Name) we need to isolate the feature dataset name
         lsFDParts = fd.split(".",1)
@@ -243,8 +248,12 @@ if len(lsFeatureDataSets) > 0:
 
         # Step into each feature dataset by altering the workspace
         arcpy.env.workspace = os.path.join(sdeFilesPath,fd)
-        UtilityClassFunctionality.printAndLog("Looking for feature classes in {}\n".format(arcpy.env.workspace), UtilityClassFunctionality.INFO_LEVEL)
-        lsFeatureClasses = arcpy.ListFeatureClasses()
+
+        try:
+            lsFeatureClasses = runESRIGPTool(arcpy.ListFeatureClasses)
+        except:
+            UtilityClassFunctionality.printAndLog("Error creating list of feature classes inside of feature dataset: {}".format(fd),
+                                                  UtilityClassFunctionality.WARNING_LEVEL)
         try:
             for fc in lsFeatureClasses:
 
@@ -260,23 +269,20 @@ if len(lsFeatureDataSets) > 0:
                     # Get the arcpy.Desribe object for each feature class
                     fcDesc = arcpy.Describe(fc)
                     lsBaseNameParts = fcDesc.baseName.split(".",1)
-
                     try:
 
                         # Build the feature class object
                         FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField)
                     except:
-                        print("FeatureClassObject didn't instantiate")
+                        UtilityClassFunctionality.printAndLog("FeatureClassObject didn't instantiate".format(fc),UtilityClassFunctionality.WARNING_LEVEL)
                     try:
                         fhand.write("{}\n".format(FC.writeFeatureClassProperties()))
                     except:
-                        print("Did not write FC properties to file")
+                        UtilityClassFunctionality.printAndLog("Did not write FC properties to file".format(fc),UtilityClassFunctionality.WARNING_LEVEL)
                 except:
-                    print("Error with {}\n".format(fc))
-
                     # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
                     fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{}\n".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField))
-
+                    UtilityClassFunctionality.printAndLog("Error with {}".format(fc), UtilityClassFunctionality.ERROR_LEVEL)
 
                 try:
 
@@ -289,18 +295,24 @@ if len(lsFeatureDataSets) > 0:
                             # Build the feature class field details object
                             fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(lsFCFields, strField_ID, strFC_ID, field)
                         except:
-                            print("FeatureClassFieldDetailsObject didn't instantiate")
+                            UtilityClassFunctionality.printAndLog("FeatureClassFieldDetailsObject didn't instantiate: {}".format(fc),
+                                                                  UtilityClassFunctionality.WARNING_LEVEL)
                         try:
                             fhandFieldsFile.write(fcFieldDetails.writeFeatureClassFieldProperties() + "\n")
                         except:
-                            print("Did not write fcFieldDetails properties to file")
+                            UtilityClassFunctionality.printAndLog("Did not write fcFieldDetails properties to file: {}".format(fcFieldDetails),
+                                                                  UtilityClassFunctionality.WARNING_LEVEL)
+                            print("")
                 except:
-                    print("Error with writing field details for {}\n".format(strField_ID))
+
 
                     # For feature class field details that don't process correctly this write statement records their presence so that they don't go undocumented.
                     fhandFieldsFile.write("{},{},ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR\n".format(strField_ID,strFC_ID))
+                    UtilityClassFunctionality.printAndLog("Error with writing field details for {}\n".format(strField_ID),
+                                                          UtilityClassFunctionality.ERROR_LEVEL)
         except:
-            print("Problem iterating through feature classes within feature dataset\n")
+            UtilityClassFunctionality.printAndLog("Problem iterating through feature classes within feature dataset: {}".format(fd),
+                                                  UtilityClassFunctionality.WARNING_LEVEL)
 else:
     pass
 
