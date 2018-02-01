@@ -215,15 +215,15 @@ try:
                         # Build the feature class field details object
                         fcFieldDetails = FeatureClassObject_Class.FeatureClassFieldDetails(lsFCFields, strField_ID, strFC_ID, field)
                     except:
-                        UtilityClassFunctionality.printAndLog("FeatureClassFieldDetailsObject didn't instantiate: {}".format(field),UtilityClassFunctionality.WARNING_LEVEL)
+                        UtilityClassFunctionality.printAndLog("FeatureClassFieldDetailsObject didn't instantiate: {}".format(strField_ID),UtilityClassFunctionality.WARNING_LEVEL)
                     try:
                         fhandFieldsFile.write("{}\n".format(fcFieldDetails.writeFeatureClassFieldProperties()))
                     except:
-                        UtilityClassFunctionality.printAndLog("Did not write fcFieldDetails properties to file: {}".format(fcFieldDetails),UtilityClassFunctionality.WARNING_LEVEL)
+                        UtilityClassFunctionality.printAndLog("Did not write fcFieldDetails properties to file: {}".format(strField_ID),UtilityClassFunctionality.WARNING_LEVEL)
             except:
                 # For feature class field details that don't process correctly this write statement records their presence so that they don't go undocumented.
                 fhandFieldsFile.write("{},{},ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR,ERROR\n".format(strField_ID,strFC_ID))
-                UtilityClassFunctionality.printAndLog("Error with writing field details for {}\n".format(strField_ID), UtilityClassFunctionality.ERROR_LEVEL)
+                UtilityClassFunctionality.printAndLog("Error with writing field details for {}".format(strField_ID), UtilityClassFunctionality.ERROR_LEVEL)
     else:
         pass
 except:
