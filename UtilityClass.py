@@ -128,12 +128,6 @@ class UtilityClassFunctionality(object):
                                                                      , tupTodayDateTime[5])
         return strTodayDateTimeForLogging
 
-    # @staticmethod
-    # def getDateToday():
-    #     import datetime
-    #     dateToday = datetime.date.today()
-    #     return dateToday
-
     @staticmethod
     def getDateParts():
         import datetime

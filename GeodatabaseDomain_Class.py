@@ -14,7 +14,7 @@ class GeodatabaseDomains(object):
     def generateDatabaseEntryText(self):
         lsCodedValuesKeys = []
         lsCodedValuesValues = []
-        strDomainID = self.strENVName + "." + self.name
+        strDomainID = "{}.{}".format(self.strENVName,self.name)
         try:
             lsCodedValuesKeys = self.objectDomain.codedValues.keys()
         except:
