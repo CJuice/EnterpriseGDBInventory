@@ -5,6 +5,7 @@ class FeatureClassObject(object):
         self.ADM_ID = ADM_ID
         self.featureDataset = featureDataset
         self.fcName = fcName
+        self.fcFeatureCount = -9999
         self.arcpyDescribeObject = arcpyDescribeObject
         self.dataType = arcpyDescribeObject.dataType
         self.shapeType = arcpyDescribeObject.shapeType
@@ -13,7 +14,7 @@ class FeatureClassObject(object):
 
         
     def writeFeatureClassProperties(self):
-        lsObjectFeatures = [self.fcID, self.ADM_ID, self.featureDataset, self.fcName, self.dataType, self.shapeType, self.spatialRefName, self.dateExport]
+        lsObjectFeatures = [self.fcID, self.ADM_ID, self.featureDataset, self.fcName, self.dataType, self.shapeType, self.spatialRefName, self.fcFeatureCount, self.dateExport]
         for i in range(len(lsObjectFeatures)):
             lsObjectFeatures[i] = str(lsObjectFeatures[i])
         return ",".join(lsObjectFeatures)

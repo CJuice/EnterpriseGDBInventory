@@ -1,6 +1,7 @@
 class GeodatabaseDomains(object):
     def __init__(self, strENVName, objectDomain, strDate):
         self.strENVName = strENVName
+        self.intEnvID = 0
         self.objectDomain = objectDomain
         self.date = strDate
         self.name = objectDomain.name
@@ -24,7 +25,7 @@ class GeodatabaseDomains(object):
         except:
             pass
         strENVNameUPPER = self.strENVName.upper()
-        lsRecordValues = [strDomainID,strENVNameUPPER,self.name,self.owner,self.description,self.domainType,self.type,lsCodedValuesKeys,lsCodedValuesValues,self.range,self.date]
+        lsRecordValues = [strDomainID,self.intEnvID,self.name,self.owner,self.description,self.domainType,self.type,lsCodedValuesKeys,lsCodedValuesValues,self.range,self.date]
         for i in range(len(lsRecordValues)):
             strTemp = str(lsRecordValues[i])
             lsRecordValues[i] = strTemp.replace(",", "|")

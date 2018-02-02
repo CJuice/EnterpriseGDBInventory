@@ -50,14 +50,14 @@ else:
 
 lsDateParts = UtilityClassFunctionality.getDateParts() #GenerateDateInfo.getDateParts()
 strDateToday = lsDateParts[0] #Original date format
-strDateTodayDatabaseField = lsDateParts[2] + "/" + lsDateParts[3] + "/" + lsDateParts[1] #redesigned date format to meet Access database format for Date
+strDateTodayDatabaseField = "{}/{}/{}".format(lsDateParts[2],lsDateParts[3],lsDateParts[1]) #redesigned date format to meet Access database format for Date
 sdeFilesList = []
 
 strOutputFeatureClassFile = os.path.join(strOutputFileDirectory, "{}_{}__FeatureClassInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
 strOutputFieldsFile = os.path.join(strOutputFileDirectory, "{}_{}__FeatureClassFIELDSInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
 strOutputDomainsFile = os.path.join(strOutputFileDirectory, "{}_{}__GeodatabaseDomainsInventory.csv".format(strDateToday, os.path.basename(sdeFilesPath)))
 
-lsFCHeaders = ["FC_ID","ADM_ID","FC_FDNAME","FC_NAME","FC_DATATYPE","FC_SHAPETYPE","FC_SPATIALREFNAME","FC_DATEEXPORT"]
+lsFCHeaders = ["FC_ID","ADM_ID","FC_FDNAME","FC_NAME","FC_DATATYPE","FC_SHAPETYPE","FC_SPATIALREFNAME","FC_FEATURECOUNT","FC_DATEEXPORT"]
 lsFieldHeaders = ["FIELD_ID","FC_ID","FLD_ALIAS","FLD_NAME","FLD_TYPE","FLD_DEF_VAL","FLD_DOMAIN","FLD_ISNULLABLE","FLD_LENGTH","FLD_PRECISION","FLD_SCALE","FLD_REQUIRED"]
 lsDomainHeaders = ["DOMAIN_ID","ENV_ID","DOM_NAME","DOM_OWNER","DOM_DESC","DOM_DOMAINTYPE","DOM_TYPE","DOM_CODEDVALKEYS","DOM_CODEDVALVALUES","DOM_RANGE","DOM_DATEEXPORT"]
 
@@ -194,15 +194,21 @@ try:
                     FC = FeatureClassObject_Class.FeatureClassObject(strFC_ID, strADM_ID, strFDName, strFCName, fcDesc, strDateTodayDatabaseField)
                 except:
                     UtilityClassFunctionality.printAndLog("FeatureClassObject didn't instantiate: {}".format(fc), UtilityClassFunctionality.WARNING_LEVEL)
+                try:
 
+                    # Get the feature count
+                    FC.fcFeatureCount = int(arcpy.GetCount_management(fc).getOutput(0))
+                except:
+                    UtilityClassFunctionality.printAndLog("Error getting feature class feature count: {}".format(fc),
+                                                          UtilityClassFunctionality.WARNING_LEVEL)
                 try:
                     fhand.write("{}\n".format(FC.writeFeatureClassProperties()))
                 except:
                     UtilityClassFunctionality.printAndLog("Did not write FC properties to file: {}".format(fc), UtilityClassFunctionality.WARNING_LEVEL)
             except:
                 # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
-                fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{},ERROR,ERROR\n".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField))
-                UtilityClassFunctionality.printAndLog("{},{},{},{},ERROR,ERROR,ERROR,{},ERROR,ERROR".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField), UtilityClassFunctionality.ERROR_LEVEL)
+                fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{},{}\n".format(strFC_ID,strADM_ID,strFDName,strFCName,FC.fcFeatureCount,strDateTodayDatabaseField))
+                UtilityClassFunctionality.printAndLog("{},{},{},{},ERROR,ERROR,ERROR,{},{}".format(strFC_ID,strADM_ID,strFDName,strFCName,FC.fcFeatureCount,strDateTodayDatabaseField), UtilityClassFunctionality.ERROR_LEVEL)
 
             try:
 
@@ -276,13 +282,27 @@ if len(lsFeatureDataSets) > 0:
                     except:
                         UtilityClassFunctionality.printAndLog("FeatureClassObject didn't instantiate".format(fc),UtilityClassFunctionality.WARNING_LEVEL)
                     try:
+
+                        # Get the feature count
+                        FC.fcFeatureCount = int(arcpy.GetCount_management(fc).getOutput(0))
+                    except:
+                        UtilityClassFunctionality.printAndLog("Error getting feature class feature count: {}".format(fc),UtilityClassFunctionality.WARNING_LEVEL)
+                    try:
                         fhand.write("{}\n".format(FC.writeFeatureClassProperties()))
                     except:
-                        UtilityClassFunctionality.printAndLog("Did not write FC properties to file".format(fc),UtilityClassFunctionality.WARNING_LEVEL)
+                        UtilityClassFunctionality.printAndLog("Did not write FC properties to file: {}".format(fc),UtilityClassFunctionality.WARNING_LEVEL)
                 except:
                     # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
-                    fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{}\n".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField))
-                    UtilityClassFunctionality.printAndLog("Error with {}".format(fc), UtilityClassFunctionality.ERROR_LEVEL)
+                    fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{},{}\n".format(strFC_ID, strADM_ID, strFDName,strFCName, FC.fcFeatureCount,strDateTodayDatabaseField))
+                    UtilityClassFunctionality.printAndLog("{},{},{},{},ERROR,ERROR,ERROR,{},{}".format(strFC_ID, strADM_ID, strFDName,strFCName, FC.fcFeatureCount,strDateTodayDatabaseField),UtilityClassFunctionality.ERROR_LEVEL)
+                #     try:
+                #         fhand.write("{}\n".format(FC.writeFeatureClassProperties()))
+                #     except:
+                #         UtilityClassFunctionality.printAndLog("Did not write FC properties to file".format(fc),UtilityClassFunctionality.WARNING_LEVEL)
+                # except:
+                #     # For feature classes that don't process correctly this write statement records their presence so that they don't go undocumented.
+                #     fhand.write("{},{},{},{},ERROR,ERROR,ERROR,{}\n".format(strFC_ID,strADM_ID,strFDName,strFCName,strDateTodayDatabaseField))
+                #     UtilityClassFunctionality.printAndLog("Error with {}".format(fc), UtilityClassFunctionality.ERROR_LEVEL)
 
                 try:
 
