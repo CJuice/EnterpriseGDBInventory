@@ -16,47 +16,47 @@ class UtilityClassFunctionality(object):
         return
 
     @staticmethod
-    def rawInputBasicChecks(strRawInputPromptSentence):
+    def raw_input_basic_checks(raw_input_prompt_sentence):
         """
         Prompt user for input and check for empty entry.
 
         Static method in UtilityClass
-        :param strRawInputPromptSentence: The prompting language to help user
+        :param raw_input_prompt_sentence: The prompting language to help user
         :return: String
         """
         import sys
-        strUserInput = None
+        user_input = None
         while True:
             version = sys.version
-            strUserInput = None
+            user_input = None
             if version.startswith("2.7."):
-                strUserInput = raw_input(strRawInputPromptSentence)
+                user_input = raw_input(raw_input_prompt_sentence)
             elif version.startswith("3."):
-                strUserInput = input(strRawInputPromptSentence)
+                user_input = input(raw_input_prompt_sentence)
             else:
                 exit()
-            if strUserInput == None or len(strUserInput) == 0:
+            if user_input == None or len(user_input) == 0:
                 pass
             else:
                 break
-        return strUserInput
+        return user_input
 
     @staticmethod
-    def processUserEntry_YesNo(strUserEntry):
+    def process_user_entry_YesNo(user_entry):
         """
         Evaluate the users response to a raw_input for yes or no.
 
         Static method in UtilityClass
-        :param strUserEntry: Users entry
+        :param user_entry: Users entry
         :return: No return, or return exit on fail
         """
-        if strUserEntry.lower() == "y":
+        if user_entry.lower() == "y":
             pass
         else:
             return exit()
 
     @staticmethod
-    def captureAndPrintGeoprocessingErrors(func):
+    def capture_and_print_geoprocessing_errors(func):
         """
         Wrap a function with try and except. Decorator.
 
@@ -67,87 +67,92 @@ class UtilityClassFunctionality(object):
         def f(*args, **kwargs):
 
             try:
-                resultValue = func(*args, **kwargs)
+                result_value = func(*args, **kwargs)
             except ExecuteError:
-                UtilityClassFunctionality.printAndLog("UtilityClass.captureAndPrintGeoprocessingErrors: Geoprocessing Error.\n{}".format(GetMessages(2)), UtilityClassFunctionality.ERROR_LEVEL)
+                UtilityClassFunctionality.print_and_log(
+                    message="UtilityClass.captureAndPrintGeoprocessingErrors: Geoprocessing Error.\n{}".format(
+                        GetMessages(2)),
+                    log_level=UtilityClassFunctionality.ERROR_LEVEL)
                 return exit()
             except Exception as e:
-                UtilityClassFunctionality.printAndLog("UtilityClass.captureAndPrintGeoprocessingErrors: {}".format(e), UtilityClassFunctionality.ERROR_LEVEL)
+                UtilityClassFunctionality.print_and_log(
+                    message="UtilityClass.captureAndPrintGeoprocessingErrors: {}".format(e),
+                    log_level=UtilityClassFunctionality.ERROR_LEVEL)
                 return exit()
-            return resultValue
+            return result_value
         return f
 
     @staticmethod
-    def checkPathExists(strPath):
+    def check_path_exists(path):
         """
         Check for path existence.
 
-        :param strPath: The path of interest
+        :param path: The path of interest
         :return: No return, or exit on fail
         """
         import os.path
-        if os.path.exists(strPath):
+        if os.path.exists(path):
             return True
         else:
             return False
 
     @staticmethod
-    def printAndLog(strMessage, strLogLevel):
+    def print_and_log(message, log_level):
         """
         Print and log any provided message based on the indicated logging level.
 
-        :param strMessage:
-        :param strLogLevel:
+        :param message:
+        :param log_level:
         :return:
         """
         import logging
-        strMessage = str(strMessage).rstrip("\n")
-        if strLogLevel is UtilityClassFunctionality.INFO_LEVEL:
-            logging.info(strMessage)
-        elif strLogLevel is UtilityClassFunctionality.WARNING_LEVEL:
-            logging.warning(strMessage)
-        elif strLogLevel is UtilityClassFunctionality.ERROR_LEVEL:
-            logging.error(strMessage)
-        print(strMessage)
+        message = str(message).rstrip("\n")
+        if log_level is UtilityClassFunctionality.INFO_LEVEL:
+            logging.info(message)
+        elif log_level is UtilityClassFunctionality.WARNING_LEVEL:
+            logging.warning(message)
+        elif log_level is UtilityClassFunctionality.ERROR_LEVEL:
+            logging.error(message)
+        print(message)
         return
 
     @staticmethod
-    def getDateTimeForLoggingAndPrinting():
+    def get_date_time_for_logging_and_printing():
         """
         Generate a preformatted date and time string for logging and printing purposes.
 
         :return: String {}/{}/{} UTC[{}:{}:{}] usable in logging, and printing statements if desired
         """
         import datetime
-        tupTodayDateTime = datetime.datetime.utcnow().timetuple()
-        strTodayDateTimeForLogging = "{}/{}/{} UTC[{}:{}:{}]".format(tupTodayDateTime[0]
-                                                                     , tupTodayDateTime[1]
-                                                                     , tupTodayDateTime[2]
-                                                                     , tupTodayDateTime[3]
-                                                                     , tupTodayDateTime[4]
-                                                                     , tupTodayDateTime[5])
-        return strTodayDateTimeForLogging
+        today_date_time_tuple = datetime.datetime.utcnow().timetuple()
+        today_date_time_for_logging = "{}/{}/{} UTC[{}:{}:{}]".format(today_date_time_tuple[0]
+                                                                     , today_date_time_tuple[1]
+                                                                     , today_date_time_tuple[2]
+                                                                     , today_date_time_tuple[3]
+                                                                     , today_date_time_tuple[4]
+                                                                     , today_date_time_tuple[5])
+        return today_date_time_for_logging
 
     @staticmethod
-    def getDateParts():
+    def get_date_parts():
         import datetime
-        dateToday = datetime.date.today()
-        strDay = None
-        strMonth = None
-        strYear = None
-        strFullDate = None
-        intDay = dateToday.day
-        if intDay < 10:
-            strDay = "0" + str(intDay)
+        date_today = datetime.date.today()
+        day = None
+        month = None
+        year = None
+        full_date = None
+        int_day = date_today.day
+        if int_day < 10:
+            day = "0" + str(int_day)
         else:
-            strDay = str(intDay)
-        intMonth = dateToday.month
-        if intMonth < 10:
-            strMonth = "0" + str(intMonth)
+            day = str(int_day)
+        int_month = date_today.month
+        if int_month < 10:
+            month = "0" + str(int_month)
         else:
-            strMonth = str(intMonth)
-        intYear = dateToday.year
-        strYear = str(intYear)
-        strFullDate = strYear + strMonth + strDay
-        lsDateParts = [strFullDate, strYear, strMonth, strDay]
-        return lsDateParts
+            month = str(int_month)
+        int_year = date_today.year
+        year = str(int_year)
+        full_date = year + month + day
+        date_parts_list = [full_date, year, month, day]
+        return date_parts_list
