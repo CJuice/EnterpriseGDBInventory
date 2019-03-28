@@ -11,3 +11,5 @@ Script will no longer look for required fields, as they were employer specific.
 The code is not ready for use in any potential environment because it is specific to the environment in which it was developed.
  The code has also not been documented to explain its function. 
  Both of these items will come at a later date to finalize the project so it is readable, and usable in any environment.
+
+Project forked into GIS Data Inspection version for MD DoIT. This version is outdated, inferior to the new version, and no longer maintained.
